@@ -22,6 +22,31 @@ void Window::onEvent(SDL_Event const &event) {
     if (event.key.keysym.sym == SDLK_RIGHT || event.key.keysym.sym == SDLK_d)
       m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Right));
   }
+
+  if (event.type == SDL_MOUSEMOTION) {
+    glm::ivec2 mousePosition;
+    SDL_GetMouseState(&mousePosition.x, &mousePosition.y);
+
+    m_mouse_pos.at(0) = ((mousePosition.x * 2.0) / m_viewportSize.x) -1;
+    m_mouse_pos.at(1) = ((-mousePosition.y * 2.0) / m_viewportSize.y) +1;
+
+    // glm::vec2 direction{mousePosition.x - m_viewportSize.x / 2,
+    //                     -(mousePosition.y - m_viewportSize.y / 2)};
+
+    // m_ship.m_rotation = std::atan2(direction.y, direction.x) - M_PI_2;
+  }
+}
+
+void Window::onUpdate() {
+  if (m_update_timer.elapsed() < 0.15)
+    return;
+  m_update_timer.restart();
+  if (m_gameData.m_input[gsl::narrow<size_t>(Input::Right)]) {
+    m_sides = std::min(25, m_sides + 1);
+  } 
+  if (m_gameData.m_input[gsl::narrow<size_t>(Input::Left)]) {
+    m_sides = std::max(3, m_sides - 1);
+  }
 }
 
 void Window::onCreate() {
@@ -30,12 +55,13 @@ void Window::onCreate() {
     layout(location = 0) in vec2 inPosition;
     layout(location = 1) in vec4 inColor;
 
+    uniform vec2 translation;
     uniform float scale;
 
     out vec4 fragColor;
 
     void main() {
-      vec2 newPosition = inPosition * scale;
+      vec2 newPosition = inPosition * scale + translation;
       gl_Position = vec4(newPosition, 0, 1);
       fragColor = inColor;
     }
@@ -56,19 +82,84 @@ void Window::onCreate() {
       {{.source = vertexShader, .stage = abcg::ShaderStage::Vertex},
        {.source = fragmentShader, .stage = abcg::ShaderStage::Fragment}});
 
-  restartUI();
+  abcg::glClearColor(0, 0, 0, 1);
+  abcg::glClear(GL_COLOR_BUFFER_BIT);
+
+  m_randomEngine.seed(
+      std::chrono::steady_clock::now().time_since_epoch().count());
 }
 
-void Window::restartUI() {
+void Window::onPaint() {
   abcg::glClear(GL_COLOR_BUFFER_BIT);
-  m_dayColor = {0.15f, 0.463f, 1.0f, 1.0f};
-  m_nightColor = {0.0f, 0.0f, 0.262f, 1.0f};
-  sides = 4;
-  m_delay = 200;
+
+  // if (m_timer.elapsed() < m_delay / 1000.0)
+  //   return;
+  // m_timer.restart();
+
+  // Create a regular polygon with number of sides in the range [3,20]
+  // std::uniform_int_distribution intDist(3, 20);
+  // auto const sides{intDist(m_randomEngine)};
+  auto const sides{m_sides};
+  setupModel(sides);
+
+  abcg::glViewport(0, 0, m_viewportSize.x, m_viewportSize.y);
+
+  abcg::glUseProgram(m_program);
+
+  // Pick a random xy position from (-1,-1) to (1,1)
+  // std::uniform_real_distribution rd1(-1.0f, 1.0f);
+  // glm::vec2 const translation{rd1(m_randomEngine), rd1(m_randomEngine)};
+  glm::vec2 const translation{m_mouse_pos.at(0), m_mouse_pos.at(1)};
+
+  auto const translationLocation{
+      abcg::glGetUniformLocation(m_program, "translation")};
+  abcg::glUniform2fv(translationLocation, 1, &translation.x);
+
+  // Pick a random scale factor (1% to 25%)
+  // std::uniform_real_distribution rd2(0.01f, 0.25f);
+  // auto const scale{rd2(m_randomEngine)};
+  auto const scale{0.05f};
+  auto const scaleLocation{abcg::glGetUniformLocation(m_program, "scale")};
+  abcg::glUniform1f(scaleLocation, scale);
+
+  // Render
+  abcg::glBindVertexArray(m_VAO);
+  abcg::glDrawArrays(GL_TRIANGLE_FAN, 0, sides + 2);
+  abcg::glBindVertexArray(0);
+
+  abcg::glUseProgram(0);
+}
+
+void Window::onPaintUI() {
+  abcg::OpenGLWindow::onPaintUI();
+
+  {
+    auto const widgetSize{ImVec2(200, 72)};
+    ImGui::SetNextWindowPos(ImVec2(m_viewportSize.x - widgetSize.x - 5,
+                                   m_viewportSize.y - widgetSize.y - 5));
+    ImGui::SetNextWindowSize(widgetSize);
+    auto const windowFlags{ImGuiWindowFlags_NoResize |
+                           ImGuiWindowFlags_NoCollapse |
+                           ImGuiWindowFlags_NoTitleBar};
+    ImGui::Begin(" ", nullptr, windowFlags);
+
+    ImGui::PushItemWidth(140);
+    ImGui::Text("%f", m_mouse_pos.at(0));
+    ImGui::Text("%f", m_mouse_pos.at(1));
+    ImGui::SliderInt("Delay", &m_delay, 0, 200, "%d ms");
+    ImGui::PopItemWidth();
+
+    if (ImGui::Button("Clear window", ImVec2(-1, 30))) {
+      abcg::glClear(GL_COLOR_BUFFER_BIT);
+    }
+
+    ImGui::End();
+  }
 }
 
 void Window::onResize(glm::ivec2 const &size) {
   m_viewportSize = size;
+
   abcg::glClear(GL_COLOR_BUFFER_BIT);
 }
 
@@ -79,126 +170,39 @@ void Window::onDestroy() {
   abcg::glDeleteVertexArrays(1, &m_VAO);
 }
 
-void Window::onPaint() {
-  // Set the clear color
-  if (m_isDay) {
-    abcg::glClearColor(m_dayColor.at(0), m_dayColor.at(1), m_dayColor.at(2),
-                     m_dayColor.at(3));
-  }
-  else {
-    abcg::glClearColor(m_nightColor.at(0), m_nightColor.at(1), m_nightColor.at(2),
-                     m_nightColor.at(3));
-  }
-  // Clear the color buffer
-  abcg::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  
-  if (animation_frame < 2000) {
-    if (m_timer.elapsed() > 1.0/m_delay){
-      animation_frame = animation_frame + 1;
-      m_timer.restart();
-    }
-
-    setupModel(sides);
-
-    abcg::glViewport(0, 0, m_viewportSize.x, m_viewportSize.y);
-
-    abcg::glUseProgram(m_program);
-
-    auto const scale{5 * animation_frame/1000.0f};
-    auto const scaleLocation{abcg::glGetUniformLocation(m_program, "scale")};
-    abcg::glUniform1f(scaleLocation, scale);
-
-    // Render
-    abcg::glBindVertexArray(m_VAO);
-    abcg::glDrawArrays(GL_TRIANGLE_FAN, 0, sides + 2);
-    abcg::glBindVertexArray(0);
-
-    abcg::glUseProgram(0);
-
-    if (animation_frame >= 2000 || scale >= 2.00f) {
-        m_isDay = !m_isDay;
-        animation_frame = 2001;
-      }
-  }
-}
-
-void Window::onPaintUI() {
-  abcg::OpenGLWindow::onPaintUI();
-  {
-    // Window begin
-    ImGui::Begin("Interface");
-    ImGui::Text("Animation frame %d\nMode: %s", animation_frame == 2001 ? 0 : animation_frame, m_isDay ? "Day" : "Night");
-    
-    ImGui::Spacing();
-    ImGui::Text("Day Mode Color:");
-    ImGui::SliderFloat("Day_R", &m_dayColor.at(0), 0.0f, 1.0f);
-    ImGui::SliderFloat("Day_G", &m_dayColor.at(1), 0.0f, 1.0f);
-    ImGui::SliderFloat("Day_B", &m_dayColor.at(2), 0.0f, 1.0f);
-
-    ImGui::Spacing();
-    ImGui::Text("Night Mode Color:");
-    ImGui::SliderFloat("Night_R", &m_nightColor.at(0), 0.0f, 1.0f);
-    ImGui::SliderFloat("Night_G", &m_nightColor.at(1), 0.0f, 1.0f);
-    ImGui::SliderFloat("Night_B", &m_nightColor.at(2), 0.0f, 1.0f);
-
-    ImGui::Spacing();
-    ImGui::Text("Animation Properties:");
-    ImGui::SliderInt("Sides", &sides, 3, 50);
-    ImGui::SliderInt("Speed", &m_delay, 20, 20000);
-
-
-    if (ImGui::Button("Change Mode", ImVec2(-1, 30))) {
-      if (animation_frame < 2001) {
-        m_isDay = !m_isDay;
-      }
-      animation_frame = 0;
-    }
-
-    if (ImGui::Button("Restart Sliders", ImVec2(-1, 30))) {
-      restartUI();
-    }
-
-    // Window end
-    ImGui::End();
-  }
-}
-
 void Window::setupModel(int sides) {
   // Release previous resources, if any
   abcg::glDeleteBuffers(1, &m_VBOPositions);
   abcg::glDeleteBuffers(1, &m_VBOColors);
   abcg::glDeleteVertexArrays(1, &m_VAO);
 
-  // Select color
-  glm::vec3 color{};
-  if (m_isDay) {
-    color[0] = m_nightColor.at(0);
-    color[1] = m_nightColor.at(1);
-    color[2] = m_nightColor.at(2);
-  }
-  else {
-    color[0] = m_dayColor.at(0);
-    color[1] = m_dayColor.at(1);
-    color[2] = m_dayColor.at(2);
-  }
+  // Select random colors for the radial gradient
+  std::uniform_real_distribution rd(0.0f, 1.0f);
+  glm::vec3 const color1{rd(m_randomEngine), rd(m_randomEngine),
+                         rd(m_randomEngine)};
+  glm::vec3 const color2{rd(m_randomEngine), rd(m_randomEngine),
+                         rd(m_randomEngine)};
+
+  // Minimum number of sides is 3
+  sides = std::max(3, sides);
 
   std::vector<glm::vec2> positions;
   std::vector<glm::vec3> colors;
 
   // Polygon center
   positions.emplace_back(0, 0);
-  colors.push_back(color);
+  colors.push_back(color1);
 
   // Border vertices
   auto const step{M_PI * 2 / sides};
   for (auto const angle : iter::range(0.0, M_PI * 2, step)) {
     positions.emplace_back(std::cos(angle), std::sin(angle));
-    colors.push_back(color);
+    colors.push_back(color2);
   }
 
   // Duplicate second vertex
   positions.push_back(positions.at(1));
-  colors.push_back(color);
+  colors.push_back(color2);
 
   // Generate VBO of positions
   abcg::glGenBuffers(1, &m_VBOPositions);

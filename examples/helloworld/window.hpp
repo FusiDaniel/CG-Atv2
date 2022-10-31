@@ -9,15 +9,16 @@ class Window : public abcg::OpenGLWindow {
 protected:
   void onCreate() override;
   void onPaint() override;
-  void onPaintUI() override;
   void onEvent(SDL_Event const &event) override;
+  void onPaintUI() override;
   void onResize(glm::ivec2 const &size) override;
   void onDestroy() override;
+  void onUpdate() override;
 
 private:
-  bool m_isDay{true};
-
   glm::ivec2 m_viewportSize{};
+
+  GameData m_gameData;
 
   GLuint m_VAO{};
   GLuint m_VBOPositions{};
@@ -27,17 +28,16 @@ private:
   std::default_random_engine m_randomEngine;
 
   abcg::Timer m_timer;
+  abcg::Timer m_update_timer;
   int m_delay{200};
 
-  GameData m_gameData;
-
-  void setupModel(int sides);
-
+  int m_sides{4};
+  std::array<float, 2> m_mouse_pos{.0f, .0f};
   std::array<float, 4> m_dayColor{0.15f, 0.463f, 1.0f, .0f};
   std::array<float, 4> m_nightColor{0.0f, 0.0f, 0.262f, .0f};
-  int sides{4};
-  int animation_frame{0};
-  void restartUI();
+
+
+  void setupModel(int sides);
 };
 
 #endif
