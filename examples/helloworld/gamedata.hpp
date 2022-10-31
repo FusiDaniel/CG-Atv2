@@ -3,12 +3,12 @@
 
 #include <bitset>
 
-enum class Input { Right, Left, Down, Up };
-enum class State { Playing, GameOver, Win };
+enum class KeyBoardInput { R_Plus, R_Minus, G_Plus, G_Minus, B_Plus, B_Minus };
+enum class MouseInput { Brush };
 
 struct GameData {
-  State m_state{State::Playing};
-  std::bitset<4> m_input;  // [up, down, left, right]
+  std::bitset<6> keyboard_input;
+  std::bitset<1> mouse_input;
 };
 
 #endif

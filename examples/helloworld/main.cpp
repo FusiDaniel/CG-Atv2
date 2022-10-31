@@ -7,11 +7,11 @@ int main(int argc, char **argv) {
 
     // Create OpenGL window
     Window window;
-    window.setOpenGLSettings({.samples = 2, .doubleBuffering = false});
+    window.setOpenGLSettings({.samples = 2, .doubleBuffering = true});
     window.setWindowSettings({
         .width = 600,
         .height = 600,
-        // .showFPS = false,
+        .showFPS = false,
         .showFullscreenButton = false,
         .title = "Day Night Mode",
     });

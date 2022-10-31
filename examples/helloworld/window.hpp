@@ -28,16 +28,12 @@ private:
   std::default_random_engine m_randomEngine;
 
   abcg::Timer m_timer;
-  abcg::Timer m_update_timer;
-  int m_delay{200};
 
-  int m_sides{4};
+  int m_sides{30};
   std::array<float, 2> m_mouse_pos{.0f, .0f};
-  std::array<float, 4> m_dayColor{0.15f, 0.463f, 1.0f, .0f};
-  std::array<float, 4> m_nightColor{0.0f, 0.0f, 0.262f, .0f};
+  std::array<float, 4> m_brush_color{0.15f, 0.463f, 1.0f, .0f};
 
   bool drawing{false};
-
   void setupModel(int sides);
 };
 

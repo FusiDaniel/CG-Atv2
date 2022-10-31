@@ -3,31 +3,41 @@
 void Window::onEvent(SDL_Event const &event) {
   // Keyboard events
   if (event.type == SDL_KEYDOWN) {
-    if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w)
-      m_gameData.m_input.set(gsl::narrow<size_t>(Input::Up));
-    if (event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_s)
-      m_gameData.m_input.set(gsl::narrow<size_t>(Input::Down));
-    if (event.key.keysym.sym == SDLK_LEFT || event.key.keysym.sym == SDLK_a)
-      m_gameData.m_input.set(gsl::narrow<size_t>(Input::Left));
-    if (event.key.keysym.sym == SDLK_RIGHT || event.key.keysym.sym == SDLK_d)
-      m_gameData.m_input.set(gsl::narrow<size_t>(Input::Right));
+    if (event.key.keysym.sym == SDLK_q)
+      m_gameData.keyboard_input.set(gsl::narrow<size_t>(KeyBoardInput::R_Plus));
+    if (event.key.keysym.sym == SDLK_a)
+      m_gameData.keyboard_input.set(gsl::narrow<size_t>(KeyBoardInput::R_Minus));
+    if (event.key.keysym.sym == SDLK_w)
+      m_gameData.keyboard_input.set(gsl::narrow<size_t>(KeyBoardInput::G_Plus));
+    if (event.key.keysym.sym == SDLK_s)
+      m_gameData.keyboard_input.set(gsl::narrow<size_t>(KeyBoardInput::G_Minus));
+    if (event.key.keysym.sym == SDLK_e)
+      m_gameData.keyboard_input.set(gsl::narrow<size_t>(KeyBoardInput::B_Plus));
+    if (event.key.keysym.sym == SDLK_d)
+      m_gameData.keyboard_input.set(gsl::narrow<size_t>(KeyBoardInput::B_Minus));
   }
   if (event.type == SDL_KEYUP) {
-    if (event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_w)
-      m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Up));
-    if (event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_s)
-      m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Down));
-    if (event.key.keysym.sym == SDLK_LEFT || event.key.keysym.sym == SDLK_a)
-      m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Left));
-    if (event.key.keysym.sym == SDLK_RIGHT || event.key.keysym.sym == SDLK_d)
-      m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Right));
+    if (event.key.keysym.sym == SDLK_q)
+      m_gameData.keyboard_input.reset(gsl::narrow<size_t>(KeyBoardInput::R_Plus));
+    if (event.key.keysym.sym == SDLK_a)
+      m_gameData.keyboard_input.reset(gsl::narrow<size_t>(KeyBoardInput::R_Minus));
+    if (event.key.keysym.sym == SDLK_w)
+      m_gameData.keyboard_input.reset(gsl::narrow<size_t>(KeyBoardInput::G_Plus));
+    if (event.key.keysym.sym == SDLK_s)
+      m_gameData.keyboard_input.reset(gsl::narrow<size_t>(KeyBoardInput::G_Minus));
+    if (event.key.keysym.sym == SDLK_e)
+      m_gameData.keyboard_input.reset(gsl::narrow<size_t>(KeyBoardInput::B_Plus));
+    if (event.key.keysym.sym == SDLK_d)
+      m_gameData.keyboard_input.reset(gsl::narrow<size_t>(KeyBoardInput::B_Minus));
   }
 
+  if (event.type == SDL_MOUSEBUTTONDOWN) {
+    if (event.button.button == SDL_BUTTON_LEFT)
+      m_gameData.mouse_input.set(gsl::narrow<size_t>(MouseInput::Brush));
+  }
   if (event.type == SDL_MOUSEBUTTONUP) {
     if (event.button.button == SDL_BUTTON_LEFT)
-      m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Up));
-    if (event.button.button == SDL_BUTTON_RIGHT)
-      m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Up));
+      m_gameData.mouse_input.reset(gsl::narrow<size_t>(MouseInput::Brush));
   }
 
   if (event.type == SDL_MOUSEMOTION) {
@@ -36,30 +46,39 @@ void Window::onEvent(SDL_Event const &event) {
 
     m_mouse_pos.at(0) = ((mousePosition.x * 2.0) / m_viewportSize.x) -1;
     m_mouse_pos.at(1) = ((-mousePosition.y * 2.0) / m_viewportSize.y) +1;
-
-    // glm::vec2 direction{mousePosition.x - m_viewportSize.x / 2,
-    //                     -(mousePosition.y - m_viewportSize.y / 2)};
-
-    // m_ship.m_rotation = std::atan2(direction.y, direction.x) - M_PI_2;
   }
 }
 
 void Window::onUpdate() {
-  // if (m_update_timer.elapsed() < 0.1)
-  //   return;
-  // m_update_timer.restart();
-  if (m_gameData.m_input[gsl::narrow<size_t>(Input::Up)]) {
+  if (m_gameData.mouse_input[gsl::narrow<size_t>(MouseInput::Brush)]) {
     drawing = true;
   }
   else {
     drawing = false;
   }
-  if (m_gameData.m_input[gsl::narrow<size_t>(Input::Right)]) {
-    m_sides = std::min(25, m_sides + 1);
-  } 
-  if (m_gameData.m_input[gsl::narrow<size_t>(Input::Left)]) {
-    m_sides = std::max(3, m_sides - 1);
+
+  if (m_timer.elapsed() < 0.01)
+    return;
+  m_timer.restart();
+  if (m_gameData.keyboard_input[gsl::narrow<size_t>(KeyBoardInput::R_Plus)]) {
+    m_brush_color.at(0) = std::min(1.0f, m_brush_color.at(0) + 0.01f);
   }
+  if (m_gameData.keyboard_input[gsl::narrow<size_t>(KeyBoardInput::R_Minus)]) {
+    m_brush_color.at(0) = std::max(0.0f, m_brush_color.at(0) - 0.01f);
+  }
+  if (m_gameData.keyboard_input[gsl::narrow<size_t>(KeyBoardInput::G_Plus)]) {
+    m_brush_color.at(1) = std::min(1.0f, m_brush_color.at(1) + 0.01f);
+  }
+  if (m_gameData.keyboard_input[gsl::narrow<size_t>(KeyBoardInput::G_Minus)]) {
+    m_brush_color.at(1) = std::max(0.0f, m_brush_color.at(1) - 0.01f);
+  }
+  if (m_gameData.keyboard_input[gsl::narrow<size_t>(KeyBoardInput::B_Plus)]) {
+    m_brush_color.at(2) = std::min(1.0f, m_brush_color.at(2) + 0.01f);
+  }
+  if (m_gameData.keyboard_input[gsl::narrow<size_t>(KeyBoardInput::B_Minus)]) {
+    m_brush_color.at(2) = std::max(0.0f, m_brush_color.at(2) - 0.01f);
+  }
+  
 }
 
 void Window::onCreate() {
@@ -105,13 +124,6 @@ void Window::onCreate() {
 void Window::onPaint() {
   // abcg::glClear(GL_COLOR_BUFFER_BIT);
 
-  // if (m_timer.elapsed() < m_delay / 1000.0)
-  //   return;
-  // m_timer.restart();
-
-  // Create a regular polygon with number of sides in the range [3,20]
-  // std::uniform_int_distribution intDist(3, 20);
-  // auto const sides{intDist(m_randomEngine)};
   auto const sides{m_sides};
   setupModel(sides);
 
@@ -119,22 +131,16 @@ void Window::onPaint() {
 
   abcg::glUseProgram(m_program);
 
-  // Pick a random xy position from (-1,-1) to (1,1)
-  // std::uniform_real_distribution rd1(-1.0f, 1.0f);
-  // glm::vec2 const translation{rd1(m_randomEngine), rd1(m_randomEngine)};
+  // Pick mouse xy position
   glm::vec2 const translation{m_mouse_pos.at(0), m_mouse_pos.at(1)};
 
   auto const translationLocation{
-      abcg::glGetUniformLocation(m_program, "translation")};
+  abcg::glGetUniformLocation(m_program, "translation")};
   abcg::glUniform2fv(translationLocation, 1, &translation.x);
 
-  // Pick a random scale factor (1% to 25%)
-  // std::uniform_real_distribution rd2(0.01f, 0.25f);
-  // auto const scale{rd2(m_randomEngine)};
-  auto const scale{0.05f};
+  auto const scale{0.025f};
   auto const scaleLocation{abcg::glGetUniformLocation(m_program, "scale")};
   abcg::glUniform1f(scaleLocation, scale);
-  
   
   // Render
   abcg::glBindVertexArray(m_VAO);
@@ -142,12 +148,11 @@ void Window::onPaint() {
     abcg::glDrawArrays(GL_TRIANGLE_FAN, 0, sides + 2);
   }
   abcg::glBindVertexArray(0);
-
   abcg::glUseProgram(0);
 }
 
 void Window::onPaintUI() {
-  abcg::OpenGLWindow::onPaintUI();
+  // abcg::OpenGLWindow::onPaintUI();
 
   {
     auto const widgetSize{ImVec2(200, 72)};
@@ -160,14 +165,8 @@ void Window::onPaintUI() {
     ImGui::Begin(" ", nullptr, windowFlags);
 
     ImGui::PushItemWidth(140);
-    ImGui::Text("%f", m_mouse_pos.at(0));
-    ImGui::Text("%f", m_mouse_pos.at(1));
-    std::string text;
-    text = fmt::format("{}'s turn", drawing ? '1' : 'O');
-    ImGui::Text("%s", text.c_str());
-    ImGui::SliderInt("Delay", &m_delay, 0, 200, "%d ms");
-    ImGui::PopItemWidth();
-
+    ImGui::ColorEdit3("Brush Color", &m_brush_color.at(0));
+    
     if (ImGui::Button("Clear window", ImVec2(-1, 30))) {
       abcg::glClear(GL_COLOR_BUFFER_BIT);
     }
@@ -178,7 +177,6 @@ void Window::onPaintUI() {
 
 void Window::onResize(glm::ivec2 const &size) {
   m_viewportSize = size;
-
   abcg::glClear(GL_COLOR_BUFFER_BIT);
 }
 
@@ -197,10 +195,7 @@ void Window::setupModel(int sides) {
 
   // Select random colors for the radial gradient
   std::uniform_real_distribution rd(0.0f, 1.0f);
-  glm::vec3 const color1{rd(m_randomEngine), rd(m_randomEngine),
-                         rd(m_randomEngine)};
-  glm::vec3 const color2{rd(m_randomEngine), rd(m_randomEngine),
-                         rd(m_randomEngine)};
+  glm::vec3 const color1{m_brush_color.at(0), m_brush_color.at(1), m_brush_color.at(2)};
 
   // Minimum number of sides is 3
   sides = std::max(3, sides);
@@ -216,12 +211,12 @@ void Window::setupModel(int sides) {
   auto const step{M_PI * 2 / sides};
   for (auto const angle : iter::range(0.0, M_PI * 2, step)) {
     positions.emplace_back(std::cos(angle), std::sin(angle));
-    colors.push_back(color2);
+    colors.push_back(color1);
   }
 
   // Duplicate second vertex
   positions.push_back(positions.at(1));
-  colors.push_back(color2);
+  colors.push_back(color1);
 
   // Generate VBO of positions
   abcg::glGenBuffers(1, &m_VBOPositions);
