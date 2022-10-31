@@ -23,6 +23,13 @@ void Window::onEvent(SDL_Event const &event) {
       m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Right));
   }
 
+  if (event.type == SDL_MOUSEBUTTONUP) {
+    if (event.button.button == SDL_BUTTON_LEFT)
+      m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Up));
+    if (event.button.button == SDL_BUTTON_RIGHT)
+      m_gameData.m_input.reset(gsl::narrow<size_t>(Input::Up));
+  }
+
   if (event.type == SDL_MOUSEMOTION) {
     glm::ivec2 mousePosition;
     SDL_GetMouseState(&mousePosition.x, &mousePosition.y);
@@ -38,9 +45,15 @@ void Window::onEvent(SDL_Event const &event) {
 }
 
 void Window::onUpdate() {
-  if (m_update_timer.elapsed() < 0.15)
-    return;
-  m_update_timer.restart();
+  // if (m_update_timer.elapsed() < 0.1)
+  //   return;
+  // m_update_timer.restart();
+  if (m_gameData.m_input[gsl::narrow<size_t>(Input::Up)]) {
+    drawing = true;
+  }
+  else {
+    drawing = false;
+  }
   if (m_gameData.m_input[gsl::narrow<size_t>(Input::Right)]) {
     m_sides = std::min(25, m_sides + 1);
   } 
@@ -90,7 +103,7 @@ void Window::onCreate() {
 }
 
 void Window::onPaint() {
-  abcg::glClear(GL_COLOR_BUFFER_BIT);
+  // abcg::glClear(GL_COLOR_BUFFER_BIT);
 
   // if (m_timer.elapsed() < m_delay / 1000.0)
   //   return;
@@ -121,10 +134,13 @@ void Window::onPaint() {
   auto const scale{0.05f};
   auto const scaleLocation{abcg::glGetUniformLocation(m_program, "scale")};
   abcg::glUniform1f(scaleLocation, scale);
-
+  
+  
   // Render
   abcg::glBindVertexArray(m_VAO);
-  abcg::glDrawArrays(GL_TRIANGLE_FAN, 0, sides + 2);
+  if (drawing) {
+    abcg::glDrawArrays(GL_TRIANGLE_FAN, 0, sides + 2);
+  }
   abcg::glBindVertexArray(0);
 
   abcg::glUseProgram(0);
@@ -146,6 +162,9 @@ void Window::onPaintUI() {
     ImGui::PushItemWidth(140);
     ImGui::Text("%f", m_mouse_pos.at(0));
     ImGui::Text("%f", m_mouse_pos.at(1));
+    std::string text;
+    text = fmt::format("{}'s turn", drawing ? '1' : 'O');
+    ImGui::Text("%s", text.c_str());
     ImGui::SliderInt("Delay", &m_delay, 0, 200, "%d ms");
     ImGui::PopItemWidth();
 

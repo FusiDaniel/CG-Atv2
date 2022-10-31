@@ -7,7 +7,7 @@ int main(int argc, char **argv) {
 
     // Create OpenGL window
     Window window;
-    window.setOpenGLSettings({.samples = 2, .doubleBuffering = true});
+    window.setOpenGLSettings({.samples = 2, .doubleBuffering = false});
     window.setWindowSettings({
         .width = 600,
         .height = 600,

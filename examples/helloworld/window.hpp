@@ -36,6 +36,7 @@ private:
   std::array<float, 4> m_dayColor{0.15f, 0.463f, 1.0f, .0f};
   std::array<float, 4> m_nightColor{0.0f, 0.0f, 0.262f, .0f};
 
+  bool drawing{false};
 
   void setupModel(int sides);
 };
