@@ -1,5 +1,10 @@
-# Paint on ABCg
-Daniel Fusimoto Pires RA: 11201921874
+# Paint no ABCg
+
+<p align="center">
+<img width="250" height="250" src="./presentation.png">
+<p>
+
+# Daniel Fusimoto Pires RA: 11201921874
 
 ## Descrição da aplicação
 
